@@ -127,25 +127,13 @@ echo -e "#EXTM3U"
 keywords=("bein" "sport" "foot" "amazon" "moto" "quipe" "leagu" "fashion" "top 14" "disney" "golf" "match" "nickel" "bfm" "news" "dieu")
 
 while IFS= read -r channel; do
-    if [[ $(echo "$channel" | jq -r '.country') == "France" ]]; then
-        name=$(echo "$channel" | jq -r '.name' | tr '[:upper:]' '[:lower:]')
-        country=$(echo "$channel" | jq -r '.country')
-        skip_channel=false
-
-        # Vérifier si le nom de la chaîne contient l'un des mots-clés
-        for keyword in "${keywords[@]}"; do
-            if [[ $name == *"$keyword"* ]]; then
-                skip_channel=true
-                break
-            fi
-        done
-
+        id=$(echo "$channel" | jq -r '.id')
         # Si la chaîne ne contient pas de mots-clés, l'imprimer
-        if [ "$skip_channel" = false ]; then
+        urlstatus=$(curl -o /dev/null --silent --head --write-out '%{http_code}' "$url_base/play/$id/index.m3u8" )
+        if [ "$urlstatus" != 404 ]; then
             # Rechercher le nom, l'id et le logo correspondants dans l'API iptv-org
             channel_info=$(find_channel_info_by_name_and_country "$name" "$country")
             print_channel_info "$channel_info"
         fi
-    fi
 done < <(curl -s "$json" --compressed | jq -c 'sort_by(.country, .name) | .[]')
 
